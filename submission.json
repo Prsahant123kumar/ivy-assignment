@@ -1,0 +1,117 @@
+{
+  "api_key": "IVY26-1C4CAE72391A",
+  "candidate": {
+    "name": "Prashant Kumar",
+    "email": "prashant.20233217@mnnit.ac.in",
+    "repo_url": "https://github.com/your-username/ivy-assignment",
+    "demo_url": "https://your-app-url.vercel.app"
+  },
+  "answers": {
+    "total_listing_records": 3200,
+    "unique_properties": 50,
+    "active_listings": 2432,
+    "corrupt_listing_ids": ["MAG-6000434", "MAG-6000794", "MAG-6001288", "MAG-6002640"],
+    "total_monthly_rent": 8165000,
+    "avg_price_per_sqft_2bhk": 30070.25,
+    "costliest_project": { "project_id": "P60036", "price_max_inr": 46900000 },
+    "listings_last_7_days": 0,
+    "fake_listing_ids": [
+      "100-6000047", "100-6000815", "100-6001161", "100-6002836", "100-6002888", 
+      "100-6003294", "100-6004112", "100-6004555", "100-6004811", "100-6005703", 
+      "100-6005995", "100-6006474", "100-6007466", "100-6009635"
+    ],
+    "projects_with_wrong_listing_count": 368
+  },
+  "findings": [
+    {
+      "endpoint": "*",
+      "category": "auth",
+      "documented": "Every request must carry the API key... append it as a query parameter.",
+      "actual": "The API key must be sent in the X-API-Key request header.",
+      "how_found": "Received a 401 error on /v1/listings specifying header requirement.",
+      "impact": "Authentication fails completely if following the docs.",
+      "evidence": []
+    },
+    {
+      "endpoint": "/auth/login",
+      "category": "auth",
+      "documented": "Returns 'token' valid for 86400s, no refresh flow.",
+      "actual": "Returns 'access_token' valid for 900s, along with a refresh token.",
+      "how_found": "Inspected the raw JSON response from POST /auth/login.",
+      "impact": "Code expecting 'token' sends undefined. Sessions expire in 15 minutes.",
+      "evidence": []
+    },
+    {
+      "endpoint": "*",
+      "category": "pagination",
+      "documented": "Limit has a maximum of 200.",
+      "actual": "The API caps the limit at 50 and quietly ignores requests for more.",
+      "how_found": "Requested limit=200, but only received 50 results per page.",
+      "impact": "Calculated total pages incorrectly, missing a large portion of data.",
+      "evidence": []
+    },
+    {
+      "endpoint": "/v1/listings",
+      "category": "pagination",
+      "documented": "'total' is the exact number of records matching your filters.",
+      "actual": "Total count claims 3195, but pacing to the end yields 3200 records.",
+      "how_found": "Compared total retrievable records to the total metadata field.",
+      "impact": "Relying on total for pagination loops can leave data behind.",
+      "evidence": []
+    },
+    {
+      "endpoint": "*",
+      "category": "timestamps",
+      "documented": "Timestamps are ISO 8601, UTC, Z suffix everywhere.",
+      "actual": "Timestamps are missing the Z suffix and represent IST (+05:30), not UTC.",
+      "how_found": "Analyzed posted_at strings and tested 7-day query logic.",
+      "impact": "Time-based queries return inaccurate results if parsed as UTC.",
+      "evidence": []
+    },
+    {
+      "endpoint": "/v1/projects",
+      "category": "units",
+      "documented": "Money is in Indian rupees, integer, everywhere in the API.",
+      "actual": "Project price_min and price_max are floats representing Crores.",
+      "how_found": "Costliest project returned 4.69, which is impossible in raw Rupees.",
+      "impact": "Financial calculations are off by a factor of 10 million.",
+      "evidence": ["P60036"]
+    },
+    {
+      "endpoint": "/v1/projects",
+      "category": "consistency",
+      "documented": "total_listings always agrees with what the listings endpoint returns.",
+      "actual": "total_listings disagrees with the actual listings count for 368 projects.",
+      "how_found": "Counted listings by project_id and compared to project total_listings.",
+      "impact": "UI showing project data will display inaccurate availability.",
+      "evidence": []
+    },
+    {
+      "endpoint": "/v1/listings",
+      "category": "duplicates",
+      "documented": "Each listing corresponds to exactly one physical property.",
+      "actual": "3200 listings resolve to only 50 distinct physical locations based on exact GPS coordinates.",
+      "how_found": "Grouped listings by unique latitude and longitude pairs.",
+      "impact": "Massive data duplication artificially inflates available inventory.",
+      "evidence": []
+    },
+    {
+      "endpoint": "/v1/listings",
+      "category": "fraud",
+      "documented": "The API itself is honest and healthy.",
+      "actual": "Multiple listings share the same phone number but use different names, indicating brokers posing as owners.",
+      "how_found": "Grouped owner names by contact numbers and found single contacts linked to multiple owner aliases.",
+      "impact": "Users are misled about who they are contacting.",
+      "evidence": ["100-6000047", "100-6000815", "100-6001161", "100-6002836"]
+    },
+    {
+      "endpoint": "/v1/listings",
+      "category": "units",
+      "documented": "Area is in Square feet.",
+      "actual": "Certain listings have a carpet area that is impossibly small (e.g., 77), indicating the unit is actually Square Meters.",
+      "how_found": "Searched for impossible minimum area dimensions.",
+      "impact": "Property sizes are vastly underrepresented for these records.",
+      "evidence": ["MAG-6000434", "MAG-6000794", "MAG-6001288", "MAG-6002640"]
+    }
+  ]
+}
