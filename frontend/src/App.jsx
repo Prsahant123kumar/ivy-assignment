@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-
+import './App.css';
 const BASE_URL = 'https://solve.ivy.homes';
 const API_KEY = import.meta.env.VITE_API_KEY;
 
@@ -42,8 +42,8 @@ function App() {
       }
 
       const data = await response.json();
-      const newAccessToken = data.access_token; 
-      
+      const newAccessToken = data.access_token;
+
       localStorage.setItem('access_token', newAccessToken);
       setToken(newAccessToken);
     } catch (err) {
@@ -110,7 +110,6 @@ function App() {
 
     try {
       if (favorites.has(listingId)) {
-        // Remove favorite
         await fetch(`${BASE_URL}/v1/favourites/${listingId}`, { method: 'DELETE', headers });
         setFavorites(prev => {
           const next = new Set(prev);
@@ -118,7 +117,6 @@ function App() {
           return next;
         });
       } else {
-        // Add favorite
         await fetch(`${BASE_URL}/v1/favourites`, {
           method: 'POST',
           headers,
@@ -133,37 +131,57 @@ function App() {
 
   const currentData = activeTab === 'listings' ? listings : activeTab === 'rentals' ? rentals : projects;
 
-  const filteredData = currentData.filter(item => 
+  const filteredData = currentData.filter(item =>
     filterLocality === '' || item.locality?.toLowerCase().includes(filterLocality.toLowerCase())
   );
 
   if (!token) {
     return (
-      <div style={{ padding: '2rem', maxWidth: '400px', margin: '4rem auto', fontFamily: 'sans-serif', border: '1px solid #ddd', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
-        <h2>Ivy Homes Portal</h2>
-        {error && <p style={{ color: 'red', backgroundColor: '#fee', padding: '0.5rem', borderRadius: '4px' }}>{error}</p>}
-        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div>
-            <label>Email:</label><br />
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required style={{ width: '100%', padding: '0.5rem', marginTop: '0.25rem' }} />
-          </div>
-          <div>
-            <label>Password:</label><br />
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required style={{ width: '100%', padding: '0.5rem', marginTop: '0.25rem' }} />
-          </div>
-          <button type="submit" disabled={loading} style={{ padding: '0.75rem', cursor: 'pointer', backgroundColor: '#007BFF', color: 'white', border: 'none', borderRadius: '4px', fontWeight: 'bold' }}>
-            {loading ? 'Logging in...' : 'Log In'}
-          </button>
-        </form>
+      <div className="login-container">
+        <div className="login-card">
+          <div className="login-header-icon">🏠</div>
+          <h2>Ivy Homes Portal</h2>
+          <p className="login-subtitle">Sign in to your analytical dashboard</p>
+
+          {error && <div className="error-message">{error}</div>}
+
+          <form onSubmit={handleLogin}>
+            <div className="input-group">
+              <label htmlFor="email">Email Address</label>
+              <input
+                id="email"
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="input-group">
+              <label htmlFor="password">Password</label>
+              <input
+                id="password"
+                type="password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+            <button type="submit" disabled={loading} className="login-button">
+              {loading ? 'Signing in...' : 'Sign In'}
+            </button>
+          </form>
+        </div>
       </div>
     );
   }
 
   return (
-    <div style={{ padding: '2rem', fontFamily: 'sans-serif', maxWidth: '1200px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #ccc', paddingBottom: '1rem' }}>
+    <div className="dashboard-container">
+      <div className="dashboard-header">
         <h1>Ivy Homes Dashboard</h1>
-        <button onClick={handleLogout} style={{ padding: '0.5rem 1rem', cursor: 'pointer', backgroundColor: '#dc3545', color: 'white', border: 'none', borderRadius: '4px' }}>Log Out</button>
+        <button onClick={handleLogout} className="logout-button">Log Out</button>
       </div>
 
       {error && <p style={{ color: 'red', backgroundColor: '#fee', padding: '0.5rem', marginTop: '1rem' }}>{error}</p>}
@@ -171,19 +189,10 @@ function App() {
       {/* Navigation Tabs */}
       <div style={{ display: 'flex', gap: '1rem', margin: '1.5rem 0', borderBottom: '2px solid #eee', paddingBottom: '0.5rem', flexWrap: 'wrap' }}>
         {['listings', 'rentals', 'projects', 'insights'].map(tab => (
-          <button 
+          <button
             key={tab}
-            onClick={() => setActiveTab(tab)} 
-            style={{ 
-              padding: '0.5rem 1rem', 
-              cursor: 'pointer', 
-              fontWeight: activeTab === tab ? 'bold' : 'normal', 
-              background: activeTab === tab ? '#007BFF' : '#f8f9fa', 
-              color: activeTab === tab ? 'white' : 'black', 
-              border: 'none', 
-              borderRadius: '4px',
-              textTransform: 'capitalize'
-            }}
+            onClick={() => setActiveTab(tab)}
+            className={`tab-button ${activeTab === tab ? 'tab-active' : ''}`}
           >
             {tab === 'insights' ? '📊 Insights & Discrepancies' : `${tab} (${tab === 'listings' ? listings.length : tab === 'rentals' ? rentals.length : projects.length})`}
           </button>
@@ -194,7 +203,7 @@ function App() {
         <div style={{ background: '#f9f9f9', padding: '2rem', borderRadius: '8px', border: '1px solid #e1e1e1' }}>
           <h2>API Analysis & Disguised Findings</h2>
           <p>This dashboard summarizes the core analytical findings and documentation bugs discovered during the assessment.</p>
-          
+
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem', margin: '1.5rem 0' }}>
             <div style={{ background: 'white', padding: '1rem', borderRadius: '6px', border: '1px solid #ddd' }}>
               <h4>Total Retrievable Listings</h4>
@@ -226,33 +235,33 @@ function App() {
       ) : (
         <>
           <div style={{ margin: '1.5rem 0' }}>
-            <input 
-              type="text" 
-              placeholder="Filter by locality (e.g., sector 49)..." 
+            <input
+              type="text"
+              placeholder="Filter by locality (e.g., sector 49)..."
               value={filterLocality}
               onChange={(e) => setFilterLocality(e.target.value)}
-              style={{ padding: '0.5rem', width: '320px', fontSize: '1rem', borderRadius: '4px', border: '1px solid #ccc' }}
+              className="locality-filter"
             />
           </div>
 
           {fetchingData ? (
             <p>Loading records from API endpoints...</p>
           ) : (
-            <div style={{ 
-              display: 'grid', 
-              gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', 
-              gap: '1.5rem', 
-              maxHeight: '70vh', 
-              overflowY: 'auto', 
-              paddingRight: '0.5rem' 
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+              gap: '1.5rem',
+              maxHeight: '70vh',
+              overflowY: 'auto',
+              paddingRight: '0.5rem'
             }}>
               {filteredData.map(item => {
                 const id = item.listing_id || item.project_id;
                 const isFav = favorites.has(id);
                 return (
-                  <div key={id} style={{ border: '1px solid #ddd', padding: '1.25rem', borderRadius: '8px', backgroundColor: '#fff', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', position: 'relative' }}>
+                  <div key={id} className="property-card">
                     {item.listing_id && (
-                      <button 
+                      <button
                         onClick={() => toggleFavorite(item.listing_id)}
                         style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.25rem' }}
                         title="Toggle Favorite"
